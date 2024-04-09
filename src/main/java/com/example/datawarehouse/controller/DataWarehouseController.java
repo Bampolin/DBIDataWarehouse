@@ -1,15 +1,32 @@
 package com.example.datawarehouse.controller;
 
-import com.example.datawarehouse.domain.Customer;
-import com.example.datawarehouse.domain.Product;
-import com.example.datawarehouse.domain.SalesDate;
-import com.example.datawarehouse.domain.Store;
+import com.example.datawarehouse.domain.*;
+import com.example.datawarehouse.service.CustomerService;
+import com.example.datawarehouse.service.ProductService;
+import com.example.datawarehouse.service.SalesDateService;
+import com.example.datawarehouse.service.StoreService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/salesfacts")
 public class DataWarehouseController {
+    @Autowired
+    private final CustomerService customerService;
+    @Autowired
+    private final ProductService productService;
+    @Autowired
+    private final SalesDateService salesDateService;
+    @Autowired
+    private final StoreService storeService;
+
+    public DataWarehouseController(CustomerService customerService, ProductService productService, SalesDateService salesDateService, StoreService storeService) {
+        this.customerService = customerService;
+        this.productService = productService;
+        this.salesDateService = salesDateService;
+        this.storeService = storeService;
+    }
 
     @PostMapping
     public ResponseEntity<?> saveFact(
@@ -58,6 +75,18 @@ public class DataWarehouseController {
         store.setPlz(storePLZ);
         store.setCountry(storeCountry);
         store.setStreet(storeStreet);
+
+        if (storeService.findByOltpId(storeID).isPresent()) {
+            store.setId(storeService.findByOltpId(storeID).get().getId());
+        }
+
+        storeService.save(store);
+
+        if (productService.findByOltpId(productID).isPresent()) {
+            product.setId(productService.findByOltpId(productID).get().getId());
+        }
+
+        productService.save(product);
 
 
 
