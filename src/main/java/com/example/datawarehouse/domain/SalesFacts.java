@@ -12,6 +12,11 @@ public class SalesFacts {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
+    private int quantity;
+
+    private int salesPrice;
+
     @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;
