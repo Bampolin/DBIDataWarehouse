@@ -1,13 +1,14 @@
 package com.example.datawarehouse.controller;
 
 import com.example.datawarehouse.domain.*;
-import com.example.datawarehouse.service.CustomerService;
-import com.example.datawarehouse.service.ProductService;
-import com.example.datawarehouse.service.SalesDateService;
-import com.example.datawarehouse.service.StoreService;
+import com.example.datawarehouse.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/salesfacts")
@@ -20,12 +21,15 @@ public class DataWarehouseController {
     private final SalesDateService salesDateService;
     @Autowired
     private final StoreService storeService;
+    @Autowired
+    private final SalesFactsService salesFactsService;
 
-    public DataWarehouseController(CustomerService customerService, ProductService productService, SalesDateService salesDateService, StoreService storeService) {
+    public DataWarehouseController(CustomerService customerService, ProductService productService, SalesDateService salesDateService, StoreService storeService, SalesFactsService salesFactsService) {
         this.customerService = customerService;
         this.productService = productService;
         this.salesDateService = salesDateService;
         this.storeService = storeService;
+        this.salesFactsService = salesFactsService;
     }
 
     @PostMapping
@@ -51,7 +55,9 @@ public class DataWarehouseController {
             @RequestParam(required = false) String salesDate,
             @RequestParam(required = false) Integer quantity,
             @RequestParam(required = false) Double price
-    ) {
+    ) throws ParseException {
+        System.out.println("\n\n\n\n\n\n\n\n\n\n------------------------------------------------------------\n\n\n\n\n\n\n\n\n\n");
+
         Customer customer = new Customer();
         Product product = new Product();
         SalesDate salesDateObj = new SalesDate();
@@ -76,11 +82,16 @@ public class DataWarehouseController {
         store.setCountry(storeCountry);
         store.setStreet(storeStreet);
 
+        System.out.println("Daten gesetzt");
+
         if (storeService.findByOltpId(storeID).isPresent()) {
             store.setId(storeService.findByOltpId(storeID).get().getId());
         }
 
         storeService.save(store);
+
+
+        System.out.println("Store Saved");
 
         if (productService.findByOltpId(productID).isPresent()) {
             product.setId(productService.findByOltpId(productID).get().getId());
@@ -88,12 +99,47 @@ public class DataWarehouseController {
 
         productService.save(product);
 
+        System.out.println("Product Saved");
+
+        if (customerService.findByOltpId(customerID).isPresent()) {
+            customer.setId(customerService.findByOltpId(customerID).get().getId());
+        }
+
+        customerService.saveCustomer(customer);
+
+        System.out.println("Customer Saved");
+
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        salesDateObj.setDate(formatter.parse(salesDate));
+
+
+        System.out.println("Datum:");
+        System.out.println(salesDateObj.getDate());
+        System.out.println("-------------------------------------------");
+        salesDateService.save(salesDateObj);
+
+        SalesFacts salesFacts = new SalesFacts();
+
+        salesFacts.setQuantity(quantity);
+        salesFacts.setSalesPrice(price);
+
+        salesFacts.setCustomer(customerService.findByOltpId(customerID).get());
+        salesFacts.setProduct(productService.findByOltpId(productID).get());
+        salesFacts.setStore(storeService.findByOltpId(storeID).get());
+        salesFacts.setSalesDate(salesDateObj);
+
+        salesFactsService.save(salesFacts);
+
+
+
 
 
 
         return null;
     }
 
-
-
+    @GetMapping("/all")
+    public List<SalesFacts> getAll() {
+        return salesFactsService.findAll();
+    }
 }
